@@ -13,7 +13,7 @@ CameraManager* CameraManager::GetInstance()
 
 void CameraManager::Initialize(UINT width, UINT height)
 {
-	try 
+	try
 	{
 		sharedInstance.reset();
 		sharedInstance = std::make_unique<CameraManager>(width, height);
@@ -136,7 +136,7 @@ void CameraManager::PossessCamera(int index)
 	m_previousCamera = m_activeCamera;
 	m_activeCamera = this->m_cameraList[index];
 
-	if(index != 0)
+	if (index != 0)
 		m_possessionState = POSSESSED;
 
 	Debug::Log("CameraManager::PossessCamera: Switched to camera at index " + std::to_string(index));
@@ -161,7 +161,10 @@ void CameraManager::UnpossessCamera()
 {
 	if (m_sceneCamera)
 	{
-		CopyPositionToSceneCamera(m_activeCamera);
+		// By commenting this line out, the scene camera will no longer
+		// copy the position of the camera you are unpossessing.
+		// CopyPositionToSceneCamera(m_activeCamera); 
+
 		m_previousCamera = m_activeCamera;
 		m_activeCamera = m_sceneCamera;
 		m_possessionState = UNPOSSESSED;
@@ -203,11 +206,10 @@ void CameraManager::OnKeyPressed(int key)
 		{
 			ResumePossess();
 		}
-		
+
 		break;
 
 	default:
 		break;
 	}
 }
-

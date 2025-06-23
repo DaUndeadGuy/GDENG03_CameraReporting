@@ -9,10 +9,6 @@
 #include "RenderSystem.h"
 #include "BatchUploader.h"
 
-#include "Quad.h"
-#include "PBSQuads.h"
-#include "AnimatedQuad.h"
-
 #include "Cube.h"
 #include "Plane.h"
 #include "Sphere.h"
@@ -78,13 +74,33 @@ void GameWindow::OnCreate(HWND hwnd)
 		auto cam = std::make_shared<Camera>("Camera_" + std::to_string(i), 1024, 768);
 		cam->SetPosition(positions[i]);
 		cam->SetLookAt(Vector3(0.0f, 0.0f, 0.0f));
-
 		CameraManager::GetInstance()->AddCamera(cam);
+		m_sceneCameras.push_back(cam);
+
+		auto cameraCube = std::make_shared<Cube>("CameraCube_" + std::to_string(i), ColorPalette::Blue);
+		cameraCube->SetScale(0.5f, 0.5f, 0.5f);
+		GameObjectManager::GetInstance()->AddGameObject(cameraCube);
 	}
 
+	// NEW: Add a camera on top of the plane looking down
+	auto topDownCam = std::make_shared<Camera>("TopDownCamera", 1024, 768);
+	topDownCam->SetPosition(0.0f, 30.0f, 0.0f); // Position it high above the plane
+	topDownCam->SetLookAt(Vector3(0.0f, 0.0f, 0.0f));   // Look down at the origin
+	CameraManager::GetInstance()->AddCamera(topDownCam);
+	m_sceneCameras.push_back(topDownCam);
+
+	// NEW: Create a corresponding cube for the top-down camera
+	auto topDownCameraCube = std::make_shared<Cube>("CameraCube_4", ColorPalette::Green); // Green for distinction
+	topDownCameraCube->SetScale(0.5f, 0.5f, 0.5f);
+	GameObjectManager::GetInstance()->AddGameObject(topDownCameraCube);
+
+
+	auto sceneCamCube = std::make_shared<Cube>("SceneCameraCube", Vector3(0.0f, 0.0f, 0.0f));
+	sceneCamCube->SetScale(0.5f, 0.5f, 0.5f);
+	GameObjectManager::GetInstance()->AddGameObject(sceneCamCube);
 
 	GraphicsEngine::GetInstance()->GetBatchUploader()->StopAndWaitUpload();
-} 
+}
 
 void GameWindow::OnUpdate()
 {
@@ -95,6 +111,38 @@ void GameWindow::OnUpdate()
 
 	CameraManager::GetInstance()->Update(deltaTime);
 	GameObjectManager::GetInstance()->UpdateAll(deltaTime);
+
+	auto activeCamera = CameraManager::GetInstance()->GetActiveCamera();
+
+	// --- Update cubes for static perspective cameras ---
+	for (size_t i = 0; i < m_sceneCameras.size(); ++i)
+	{
+		auto camera = m_sceneCameras[i];
+		auto cube = GameObjectManager::GetInstance()->FindObjectByName("CameraCube_" + std::to_string(i));
+
+		if (camera && cube)
+		{
+			cube->SetPosition(camera->GetLocalPosition());
+			cube->SetRotation(camera->GetLocalRotation());
+
+			if (camera == activeCamera) { cube->SetActive(false); }
+			else { cube->SetActive(true); }
+		}
+	}
+
+	// --- Update the cube for the main scene camera ---
+	auto sceneCamera = CameraManager::GetInstance()->GetSceneCamera();
+	auto sceneCameraCube = GameObjectManager::GetInstance()->FindObjectByName("SceneCameraCube");
+
+	if (sceneCamera && sceneCameraCube)
+	{
+		sceneCameraCube->SetPosition(sceneCamera->GetLocalPosition());
+		sceneCameraCube->SetRotation(sceneCamera->GetLocalRotation());
+
+		if (sceneCamera == activeCamera) { sceneCameraCube->SetActive(false); }
+		else { sceneCameraCube->SetActive(true); }
+	}
+
 
 	FrameConstantsData frameData = {};
 	frameData.viewMatrix = CameraManager::GetInstance()->GetActiveCameraViewMatrix();
