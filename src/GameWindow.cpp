@@ -82,15 +82,13 @@ void GameWindow::OnCreate(HWND hwnd)
 		GameObjectManager::GetInstance()->AddGameObject(cameraCube);
 	}
 
-	// NEW: Add a camera on top of the plane looking down
 	auto topDownCam = std::make_shared<Camera>("TopDownCamera", 1024, 768);
-	topDownCam->SetPosition(0.0f, 30.0f, 0.0f); // Position it high above the plane
-	topDownCam->SetLookAt(Vector3(0.0f, 0.0f, 0.0f));   // Look down at the origin
+	topDownCam->SetPosition(0.0f, 30.0f, 0.0f);
+	topDownCam->SetLookAt(Vector3(0.0f, 0.0f, 0.0f));
 	CameraManager::GetInstance()->AddCamera(topDownCam);
 	m_sceneCameras.push_back(topDownCam);
 
-	// NEW: Create a corresponding cube for the top-down camera
-	auto topDownCameraCube = std::make_shared<Cube>("CameraCube_4", ColorPalette::Green); // Green for distinction
+	auto topDownCameraCube = std::make_shared<Cube>("CameraCube_4", ColorPalette::Green);
 	topDownCameraCube->SetScale(0.5f, 0.5f, 0.5f);
 	GameObjectManager::GetInstance()->AddGameObject(topDownCameraCube);
 
@@ -112,36 +110,55 @@ void GameWindow::OnUpdate()
 	CameraManager::GetInstance()->Update(deltaTime);
 	GameObjectManager::GetInstance()->UpdateAll(deltaTime);
 
-	auto activeCamera = CameraManager::GetInstance()->GetActiveCamera();
 
-	// --- Update cubes for static perspective cameras ---
-	for (size_t i = 0; i < m_sceneCameras.size(); ++i)
-	{
-		auto camera = m_sceneCameras[i];
-		auto cube = GameObjectManager::GetInstance()->FindObjectByName("CameraCube_" + std::to_string(i));
-
-		if (camera && cube)
-		{
-			cube->SetPosition(camera->GetLocalPosition());
-			cube->SetRotation(camera->GetLocalRotation());
-
-			if (camera == activeCamera) { cube->SetActive(false); }
-			else { cube->SetActive(true); }
-		}
-	}
-
-	// --- Update the cube for the main scene camera ---
+	// --- FIXED CAMERA CUBE LOGIC ---
+	// First, update all cube positions and set them to be visible by default.
 	auto sceneCamera = CameraManager::GetInstance()->GetSceneCamera();
 	auto sceneCameraCube = GameObjectManager::GetInstance()->FindObjectByName("SceneCameraCube");
-
 	if (sceneCamera && sceneCameraCube)
 	{
 		sceneCameraCube->SetPosition(sceneCamera->GetLocalPosition());
 		sceneCameraCube->SetRotation(sceneCamera->GetLocalRotation());
-
-		if (sceneCamera == activeCamera) { sceneCameraCube->SetActive(false); }
-		else { sceneCameraCube->SetActive(true); }
+		sceneCameraCube->SetActive(true);
 	}
+
+	for (size_t i = 0; i < m_sceneCameras.size(); ++i)
+	{
+		auto camera = m_sceneCameras[i];
+		auto cube = GameObjectManager::GetInstance()->FindObjectByName("CameraCube_" + std::to_string(i));
+		if (camera && cube)
+		{
+			cube->SetPosition(camera->GetLocalPosition());
+			cube->SetRotation(camera->GetLocalRotation());
+			cube->SetActive(true);
+		}
+	}
+
+	// Second, find the ONE cube that belongs to the ACTIVE camera and hide it.
+	auto activeCamera = CameraManager::GetInstance()->GetActiveCamera();
+	if (activeCamera == sceneCamera)
+	{
+		if (sceneCameraCube)
+		{
+			sceneCameraCube->SetActive(false);
+		}
+	}
+	else
+	{
+		for (size_t i = 0; i < m_sceneCameras.size(); ++i)
+		{
+			if (m_sceneCameras[i] == activeCamera)
+			{
+				auto cubeToHide = GameObjectManager::GetInstance()->FindObjectByName("CameraCube_" + std::to_string(i));
+				if (cubeToHide)
+				{
+					cubeToHide->SetActive(false);
+				}
+				break;
+			}
+		}
+	}
+	// --- END OF FIX ---
 
 
 	FrameConstantsData frameData = {};
