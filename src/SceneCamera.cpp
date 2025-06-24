@@ -4,7 +4,6 @@
 SceneCamera::SceneCamera(UINT viewportWidth, UINT viewportHeight) : Camera("Scene Camera", viewportWidth, viewportHeight)
 {
 	this->SetActive(true);
-	this->m_isPerspectiveView = true;
 	this->m_lastMousePosition = Vector2(0.0f, 0.0f);
 }
 
@@ -85,7 +84,7 @@ void SceneCamera::ZoomMode(float deltaTime)
 {
     if (m_scrollDelta == 0.0f) return;
 
-    if (this->m_isPerspectiveView)
+    if (this->IsPerspectiveView())
     {
         Vector3 zoomDirection = this->GetForwardVector();
         float zoomAmount = m_scrollDelta * m_cameraMoveSpeed * deltaTime;

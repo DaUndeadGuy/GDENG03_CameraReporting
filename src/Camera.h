@@ -19,7 +19,9 @@ public:
 	void SetViewportSize(UINT width, UINT height);
 	void SetLookAt(Vector3 lookat);
 
-protected:
+	bool IsPerspectiveView() const { return m_isPerspectiveView; }
+
+private:
 	bool m_isPerspectiveView = true;
 	float m_deltaTime = 0.0f;
 
